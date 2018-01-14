@@ -8,24 +8,23 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Data.SqlClient;
+using System.Data.Linq;
 
 namespace Inwentarz
 {
     public partial class Baza : Form
     {
-        DataClasses1DataContext dc = new DataClasses1DataContext();
-        
+        static DataClasses1DataContext db = new DataClasses1DataContext(@"Data Source=DESKTOP-A932NOV;Initial Catalog=Albumy;Integrated Security=True");
+
         public Baza()
         {
             InitializeComponent();
         }
         private void Baza_Load(object sender, EventArgs e)
         {
-            SqlConnection con = new SqlConnection("Data Source=DESKTOP-A932NOV;Initial Catalog=Albumy;Integrated Security=True");
-            SqlDataAdapter sda = new SqlDataAdapter(@"SELECT * FROM Albumy", con);
-            DataTable dt = new DataTable();
-            sda.Fill(dt);
-            dgv1.DataSource = dt;
+        
+            var query = from c in db.Albumy select c;
+            dgv1.DataSource = query;
             this.ControlBox = false;
         }
 
@@ -57,7 +56,75 @@ namespace Inwentarz
 
         private void dodajToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            Form2 okno = new Form2();
+            okno.Show();
+            var query = from c in db.Albumy select c;
+            dgv1.DataSource = query;
+            this.ControlBox = false;
+        }
 
+        private void dgv1_CellContentDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            if (!String.IsNullOrWhiteSpace(wyk.Text))
+            {
+                var query = from c in db.Albumy
+                where c.Wykonawca == wyk.Text && c.Stan == stan.Text
+                select c;
+                dgv1.DataSource = query;
+                this.ControlBox = false;
+            }
+            if (!String.IsNullOrWhiteSpace(tyt.Text))
+            {
+                var query = from c in db.Albumy
+                            where c.Tytuł == tyt.Text && c.Stan == stan.Text
+                            select c;
+                dgv1.DataSource = query;
+                this.ControlBox = false;
+            }
+            if (!String.IsNullOrWhiteSpace(rok.Text))
+            {
+                var query = from c in db.Albumy
+                            where c.Rok_wydania == int.Parse(rok.Text) && c.Stan == stan.Text
+                            select c;
+                dgv1.DataSource = query;
+                this.ControlBox = false;
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            var query = from c in db.Albumy select c;
+            dgv1.DataSource = query;
+            this.ControlBox = false;
+        }
+
+        private void usuńToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var result = MessageBox.Show("Czy na pewno chcesz usunąć rekordy?", "Usuwanie", MessageBoxButtons.YesNo);
+            if (result == DialogResult.Yes)
+            {
+                SqlConnection conn = new SqlConnection("Data Source=DESKTOP-A932NOV;Initial Catalog=Albumy;Integrated Security=True");
+                conn.Open();
+                System.Data.SqlClient.SqlCommand cmd = new System.Data.SqlClient.SqlCommand();
+                cmd.Connection = conn;
+
+                foreach (DataGridViewRow item in dgv1.SelectedRows)
+                {
+                    cmd.CommandText = "DELETE FROM dbo.Albumy WHERE Tytuł = '" + (item.Cells[2].Value) + "'";
+                    cmd.CommandType = System.Data.CommandType.Text;
+                    cmd.ExecuteNonQuery();
+                    MessageBox.Show("Usunięto.");
+                }
+                conn.Close();
+                var query = from c in db.Albumy select c;
+                dgv1.DataSource = query;
+                this.ControlBox = false;
+
+            }
         }
     }
 }
